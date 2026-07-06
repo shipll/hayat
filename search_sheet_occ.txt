@@ -1,0 +1,164 @@
+﻿--- STEP 17 ---
+Match at line 115 in content:
+104:                 duration: const Duration(milliseconds: 180),
+105:                 child: IgnorePointer(
+106:                   ignoring: !_isToolbarVisible,
+107:                   child: _QuranQuickPanel(
+108:                     currentPage: _currentMushafPage(),
+109:                     onSearch: () => _showQuranSearchSheet(context),
+110:                     onIndex: () => _showQuranIndexSheet(context),
+111:                     onJump: () => _showQuranJumpSheet(context),
+112:                     onPrevious: () => _jumpToMushafPage(
+113:                       (_currentMushafPage() - 1).clamp(
+114:                         1,
+115:                         quran_text.totalPagesCount,
+116:                       ),
+117:                     ),
+118:                     onNext: () => _jumpToMushafPage(
+119:                       (_currentMushafPage() + 1).clamp(
+120:                         1,
+121:                         quran_text.totalPagesCount,
+122:                       ),
+123:                     ),
+124:                   ),
+125:                 ),
+126:               ),
+127:             ),
+128:             PositionedDirectional(
+129:               start: 12,
+130:               end: 12,
+131:               bottom: MediaQuery.paddingOf(context).bottom + 8,
+132:               child: AnimatedOpacity(
+133:                 opacity: _isToolbarVisible ? 1 : 0,
+134:                 duration: const Duration(milliseconds: 180),
+135:                 child: IgnorePointer(
+136:                   ignoring: !_isToolbarVisible,
+137:                   child: _QuranFloatingToolbar(
+138:                     onHome: () => appController.navigateToPage(0),
+139:                     onMemorize: () => _showQuranMemorizationSheet(context),
+140:                     onAudio: () => _showQuranAudioSheet(context),
+141:                     onSaveMark: () => _saveCurrentReadingMark(context),
+142:                     onOpenMark: () => _openReadingMarkSheet(context),
+143:                   ),
+144:                 ),
+145:               ),
+146:             ),
+147:           ],
+148:         ),
+149:       ),
+150:     );
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+------------------------
+--- STEP 20 ---
+--- STEP 22 ---
+--- STEP 35 ---
+Match at line 78 in content:
+1255:       },
+1256:     ),
+1257:   );
+1258: }
+1259: 
+1260: void _showQuranSearchSheet(BuildContext context) {
+1261:   final controller = TextEditingController();
+1262:   var query = '';
+1263: 
+1264:   final route = showModalBottomSheet<void>(
+1265:     context: context,
+1266:     backgroundColor: Colors.black,
+1267:     isScrollControlled: true,
+1268:     builder: (sheetContext) {
+1269:       return StatefulBuilder(
+1270:         builder: (context, setSheetState) {
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+------------------------
+--- STEP 44 ---
+Match at line 57 in content:
+1255:       },
+1256:     ),
+1257:   );
+1258: }
+1259: 
+1260: void _showQuranSearchSheet(BuildContext context) {
+1261:   final controller = TextEditingController();
+1262:   var query = '';
+1263: 
+1264:   final route = showModalBottomSheet<void>(
+1265:     context: context,
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+------------------------
+--- STEP 48 ---
+Match at line 21 in content:
+1249:       },
+1250:     ),
+1251:   );
+1252: }
+1253: 
+1254: void _showQuranSearchSheet(BuildContext context) {
+1255:   final controller = TextEditingController();
+1256:   var query = '';
+1257: 
+1258:   final route = showModalBottomSheet<void>(
+1259:     context: context,
+1260:     backgroundColor: Colors.black,
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+------------------------
+--- STEP 50 ---
+Match at line 22 in content:
+-      },
+-    ),
+-  );
+-}
+-
+-void _showQuranSearchSheet(BuildContext context) {
++                  itemCount: quran_text.totalSurahCount,
++                  separatorBuilder: (_, _) =>
++                      Divider(color: Colors.white.withValues(alpha: 0.08)),
++                  itemBuilder: (context, index) {
++                    final surah = index + 1;
++                    final page = quran_text.getPageNumber(surah, 1);
++                    return ListTile(
++                      leading: CircleAvatar(
++                        backgroundColor: QuranPage._goldColor.withValues(
++                          alpha: 0.14,
++                        ),
++                        foregroundColor: QuranPage._goldColor,
++                        child: Text('$surah'),
++                      ),
++                      title: Text(
++                        quran_text.getSurahNameArabic(surah),
++                        style: const TextStyle(color: Colors.white),
++                      ),
++                      subtitle: Text(
++                        'ط¢ظٹط§طھظ‡ط§ ${quran_text.getVerseCount(surah)} - طµظپط­ط© $page',
++                        style: TextStyle(
++                          color: Colors.white.withValues(alpha: 0.62),
++                        ),
++                      ),
++                      onTap: () {
++                        _jumpToMushafPage(page);
++                        Navigator.pop(sheetContext);
++                      },
++                    );
++                  },
++                ),
++              ),
++            ],
++          ),
++        ),
++      ),
++    ),
++  );
++}
+   final controller = TextEditingController();
+   var query = '';
+ 
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.
+
+We did our best to apply changes despite some inaccuracies. Double check if the edit applied is what you intended.
+------------------------

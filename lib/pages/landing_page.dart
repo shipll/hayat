@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
+import '../theme/app_theme.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/arabesque_painter.dart';
 
@@ -12,10 +13,7 @@ class LandingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppController controller = Get.find<AppController>();
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final goldColor = isDark
-        ? const Color(0xFFD4AF37)
-        : const Color(0xFFC5A059);
+    final goldColor = theme.hayahGold;
 
     return Scaffold(
       body: ArabesqueBackground(

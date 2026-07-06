@@ -51,6 +51,8 @@
 	<string>Hayah can use your location to keep prayer reminders accurate.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Hayah uses the microphone to listen during Quran memorization practice.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Hayah uses the camera to show live Qibla guidance when your device supports a compass.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Hayah uses speech recognition to compare your recitation with the selected Quran verses.</string>
 </dict>

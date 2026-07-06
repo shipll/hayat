@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
 import '../controllers/prayer_controller.dart';
 import '../services/quran_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/arabesque_painter.dart';
 
@@ -16,10 +17,7 @@ class HomePage extends StatelessWidget {
     final PrayerController prayerController = Get.find<PrayerController>();
     final QuranService quranService = Get.find<QuranService>();
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final goldColor = isDark
-        ? const Color(0xFFD4AF37)
-        : const Color(0xFFC5A059);
+    final goldColor = theme.hayahGold;
 
     return Scaffold(
       body: ArabesqueBackground(

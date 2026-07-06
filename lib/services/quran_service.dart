@@ -7,10 +7,15 @@ import 'package:quran/quran.dart' as quran;
 import 'storage_service.dart';
 
 class TafsirEdition {
-  const TafsirEdition({required this.key, required this.name});
+  const TafsirEdition({
+    required this.key,
+    required this.name,
+    this.isTranslation = false,
+  });
 
   final String key;
   final String name;
+  final bool isTranslation;
 }
 
 class QuranReciterOption {
@@ -65,6 +70,18 @@ class QuranVerse {
   String get id => '$surah:$verse';
 }
 
+class SimilarQuranVerse {
+  const SimilarQuranVerse({
+    required this.verse,
+    required this.sharedWords,
+    required this.score,
+  });
+
+  final QuranVerse verse;
+  final List<String> sharedWords;
+  final int score;
+}
+
 class DailyAyah {
   const DailyAyah({required this.verse, required this.reference});
 
@@ -93,11 +110,60 @@ class QuranService {
   static const _selectedTafsirKey = 'quran_selected_tafsir';
   static const _selectedReciterKey = 'quran_selected_reciter';
   static const _tafsirPrefix = 'tafsir_';
+  static const _tafsirEditionPrefix = 'tafsir_edition_';
+  static const _libraryTafsirPrefix = 'library:';
+  static const Set<String> _similarityStopWords = {
+    'من',
+    'في',
+    'علي',
+    'عن',
+    'ما',
+    'لا',
+    'ولا',
+    'ان',
+    'انا',
+    'انما',
+    'كان',
+    'كانوا',
+    'ذلك',
+    'تلك',
+    'هذا',
+    'هذه',
+    'هو',
+    'هي',
+    'هم',
+    'كم',
+    'ثم',
+    'قد',
+    'كل',
+    'لهم',
+    'لكم',
+    'به',
+    'بها',
+    'فيه',
+    'فيها',
+    'الي',
+    'اليه',
+    'اليها',
+    'الذي',
+    'الذين',
+    'التي',
+    'الله',
+    'رب',
+    'ربكم',
+    'ربك',
+  };
 
   static const List<TafsirEdition> tafsirEditions = [
     TafsirEdition(key: 'ar.muyassar', name: 'التفسير الميسر'),
     TafsirEdition(key: 'ar.jalalayn', name: 'تفسير الجلالين'),
-    TafsirEdition(key: 'en.asad', name: 'Muhammad Asad'),
+    TafsirEdition(key: 'ar.miqbas', name: 'تنوير المقباس من تفسير ابن عباس'),
+    TafsirEdition(key: 'ar.waseet', name: 'التفسير الوسيط'),
+    TafsirEdition(
+      key: 'en.asad',
+      name: 'English - Muhammad Asad',
+      isTranslation: true,
+    ),
   ];
 
   static const List<QuranReciterOption> reciters = [
@@ -406,6 +472,71 @@ class QuranService {
     return results;
   }
 
+  Future<List<SimilarQuranVerse>> getSimilarVerses(
+    int surah,
+    int verse, {
+    int limit = 10,
+  }) async {
+    if (!_isPreloaded) {
+      await preloadQuranAsync();
+    }
+
+    final source = getVerse(surah, verse);
+    final sourceWords = _significantWords(source.text);
+    if (sourceWords.length < 3) return <SimilarQuranVerse>[];
+
+    final sourceWordSet = sourceWords.toSet();
+    final sourcePhrases = _wordPairs(sourceWords);
+    final results = <SimilarQuranVerse>[];
+    var index = 0;
+
+    for (final candidate in _verseCache.values) {
+      if (candidate.id == source.id) continue;
+
+      final candidateWords = _significantWords(candidate.text);
+      if (candidateWords.length < 3) continue;
+
+      final shared = candidateWords
+          .where(sourceWordSet.contains)
+          .toSet()
+          .toList(growable: false);
+      if (shared.length < 3) continue;
+
+      final phraseMatches = _wordPairs(
+        candidateWords,
+      ).where(sourcePhrases.contains).length;
+      final coverage = (shared.length * 100) ~/ sourceWordSet.length;
+      final score = (shared.length * 12) + (phraseMatches * 18) + coverage;
+
+      if (score >= 45) {
+        results.add(
+          SimilarQuranVerse(
+            verse: candidate,
+            sharedWords: shared,
+            score: score,
+          ),
+        );
+      }
+
+      index++;
+      if (index % 350 == 0) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    results.sort((a, b) {
+      final scoreComparison = b.score.compareTo(a.score);
+      if (scoreComparison != 0) return scoreComparison;
+      final sharedComparison = b.sharedWords.length.compareTo(
+        a.sharedWords.length,
+      );
+      if (sharedComparison != 0) return sharedComparison;
+      return a.verse.page.compareTo(b.verse.page);
+    });
+
+    return results.take(limit).toList(growable: false);
+  }
+
   String _normalizeArabicSearch(String value) {
     return value
         .trim()
@@ -416,6 +547,29 @@ class QuranService {
         .replaceAll('\u0626', '\u064A')
         .replaceAll('\u0629', '\u0647')
         .replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  List<String> _significantWords(String value) {
+    final normalized = _normalizeArabicSearch(value)
+        .replaceAll(RegExp(r'[^\u0621-\u064A\s]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (normalized.isEmpty) return <String>[];
+
+    return normalized
+        .split(' ')
+        .where((word) => word.length > 3 && !_similarityStopWords.contains(word))
+        .toList(growable: false);
+  }
+
+  Set<String> _wordPairs(List<String> words) {
+    if (words.length < 2) return <String>{};
+
+    final pairs = <String>{};
+    for (var index = 0; index < words.length - 1; index++) {
+      pairs.add('${words[index]} ${words[index + 1]}');
+    }
+    return pairs;
   }
 
   QuranVerse getLastRead() {
@@ -466,18 +620,29 @@ class QuranService {
       _storage.write(_fontScaleKey, value.clamp(0.8, 1.6).toDouble());
 
   TafsirEdition getSelectedTafsir() {
-    final key = _storage.read<String>(
-      _selectedTafsirKey,
-      tafsirEditions.first.key,
-    );
+    final key = getSelectedTafsirKey();
     return tafsirEditions.firstWhere(
       (edition) => edition.key == key,
       orElse: () => tafsirEditions.first,
     );
   }
 
+  String getSelectedTafsirKey() => _storage.read<String>(
+    _selectedTafsirKey,
+    tafsirEditions.first.key,
+  );
+
   Future<void> setSelectedTafsir(String key) =>
       _storage.write(_selectedTafsirKey, key);
+
+  Future<void> setSelectedLibraryTafsir(int index) =>
+      _storage.write(_selectedTafsirKey, '$_libraryTafsirPrefix$index');
+
+  bool isSelectedLibraryTafsir(int index) =>
+      getSelectedTafsirKey() == '$_libraryTafsirPrefix$index';
+
+  bool isTafsirEditionDownloaded(String editionKey) =>
+      _storage.contains('$_tafsirEditionPrefix$editionKey');
 
   QuranReciterOption getSelectedReciter() {
     final key = _storage.read<String>(_selectedReciterKey, reciters.first.key);
@@ -509,6 +674,8 @@ class QuranService {
   List<String> getBookmarks() => _storage.readStringList(_bookmarksKey);
 
   Future<String> getTafsir(int surah, int verse) async {
+    final key = getSelectedTafsirKey();
+    if (key.startsWith(_libraryTafsirPrefix)) return '';
     final edition = getSelectedTafsir();
     return getTafsirForEdition(surah, verse, edition.key);
   }
@@ -518,6 +685,16 @@ class QuranService {
     int verse,
     String editionKey,
   ) async {
+    final editionCache = _storage.read<String>(
+      '$_tafsirEditionPrefix$editionKey',
+      '',
+    );
+    if (editionCache.isNotEmpty) {
+      final decoded = jsonDecode(editionCache) as Map<String, dynamic>;
+      final tafsir = decoded['$surah:$verse']?.toString() ?? '';
+      if (tafsir.isNotEmpty) return tafsir;
+    }
+
     final key = '$_tafsirPrefix$editionKey:$surah:$verse';
     final cached = _storage.read<String>(key, '');
     if (cached.isNotEmpty) return cached;
@@ -535,6 +712,46 @@ class QuranService {
     if (tafsir.isEmpty) throw Exception('No tafsir found');
     await _storage.write(key, tafsir);
     return tafsir;
+  }
+
+  Future<void> downloadTafsirEdition(String editionKey) async {
+    final url = Uri.parse('https://api.alquran.cloud/v1/quran/$editionKey');
+    final response = await http.get(url).timeout(const Duration(seconds: 30));
+    if (response.statusCode != 200) {
+      throw Exception('Tafsir edition download failed');
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = body['data'] as Map<String, dynamic>?;
+    final surahs = data?['surahs'] as List<dynamic>?;
+    if (surahs == null || surahs.isEmpty) {
+      throw Exception('No tafsir edition data found');
+    }
+
+    final values = <String, String>{};
+    for (final surahEntry in surahs) {
+      if (surahEntry is! Map<String, dynamic>) continue;
+      final surahNumber = int.tryParse('${surahEntry['number']}');
+      final ayahs = surahEntry['ayahs'] as List<dynamic>?;
+      if (surahNumber == null || ayahs == null) continue;
+
+      for (final ayahEntry in ayahs) {
+        if (ayahEntry is! Map<String, dynamic>) continue;
+        final verseNumber = int.tryParse('${ayahEntry['numberInSurah']}');
+        final text = ayahEntry['text']?.toString() ?? '';
+        if (verseNumber == null || text.isEmpty) continue;
+        values['$surahNumber:$verseNumber'] = text;
+      }
+    }
+
+    if (values.length < quran.totalVerseCount) {
+      throw Exception('Incomplete tafsir edition data');
+    }
+
+    await _storage.write(
+      '$_tafsirEditionPrefix$editionKey',
+      jsonEncode(values),
+    );
   }
 
   Future<void> _toggleStringListValue(String key, String value) async {

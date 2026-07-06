@@ -5,6 +5,48 @@ class AppTheme {
   static const String _displayFont = 'serif';
   static const String _bodyFont = 'sans-serif';
 
+  static const Size designSize = Size(390, 844);
+  static const Locale fallbackLocale = Locale('en');
+
+  static const String splashAsset = 'stitch_hayat/hayah.png/screen.png';
+
+  static const Duration splashDuration = Duration(milliseconds: 1800);
+  static const Duration snackDuration = Duration(seconds: 3);
+  static const Duration longSnackDuration = Duration(seconds: 6);
+  static const Duration navIndicatorDuration = Duration(milliseconds: 180);
+
+  static const double alphaLow = 0.07;
+  static const double alphaSubtle = 0.10;
+  static const double alphaBorder = 0.16;
+  static const double alphaMedium = 0.60;
+  static const double alphaStrong = 0.80;
+
+  static double get space1 => 4.w;
+  static double get space2 => 8.w;
+  static double get space3 => 12.w;
+  static double get space4 => 16.w;
+  static double get space5 => 18.w;
+  static double get space6 => 24.w;
+  static double get space7 => 28.w;
+  static double get space8 => 32.w;
+  static double get navBottomSpace => 100.h;
+
+  static double get radiusXs => 4.r;
+  static double get radiusSm => 12.r;
+  static double get radiusMd => 14.r;
+  static double get radiusLg => 20.r;
+  static double get radiusXl => 24.r;
+  static double get radiusFull => 999.r;
+
+  static double get strokeThin => 1.w;
+  static double get strokeRegular => 1.5.w;
+  static double get iconSm => 16.r;
+  static double get iconMd => 22.r;
+  static double get iconLg => 28.r;
+  static double get iconXl => 54.r;
+  static double get textHeightTight => 1.25;
+  static double get textHeightRelaxed => 1.5;
+
   // ── Brand Colours ──────────────────────────────────────────────────────────
   static const Color primaryNight      = Color(0xFF003527);
   static const Color backgroundNight   = Color(0xFF060D0A);
@@ -21,6 +63,11 @@ class AppTheme {
   static const Color goldAccentLight   = Color(0xFFEED2A0);
   static const Color textLight         = Color(0xFF121C2A);
   static const Color textVariantLight  = Color(0xFF404944);
+  static const Color splashBackground = Colors.black;
+  static const Color onSplash = Colors.white;
+  static const Color onSplashMuted = Colors.white70;
+  static const Color mutedIcon = Colors.grey;
+  static const Color transparent = Colors.transparent;
 
   // ── Night (Dark) Theme ─────────────────────────────────────────────────────
   static ThemeData get nightTheme {
@@ -165,4 +212,9 @@ class AppTheme {
       ),
     );
   }
+}
+
+extension HayahThemeX on ThemeData {
+  Color get hayahGold =>
+      brightness == Brightness.dark ? AppTheme.goldNight : AppTheme.goldLight;
 }

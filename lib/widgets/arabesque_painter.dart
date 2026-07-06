@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 class ArabesquePainter extends CustomPainter {
   final Color color;
   final double opacity;
@@ -72,11 +74,10 @@ class ArabesqueBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
-    // Choose appropriate accent color for patterns
+
     final Color patternColor = isDark
-        ? const Color(0xFFD4AF37) // gold
-        : theme.colorScheme.primary; // primary green
+        ? theme.hayahGold
+        : theme.colorScheme.primary;
 
     return Stack(
       children: [

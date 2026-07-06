@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../controllers/app_controller.dart';
+import '../theme/app_theme.dart';
 
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({super.key, required this.currentIndex});
@@ -13,9 +14,7 @@ class AppBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<AppController>();
     final theme = Theme.of(context);
-    final goldColor = theme.brightness == Brightness.dark
-        ? const Color(0xFFD4AF37)
-        : const Color(0xFFC5A059);
+    final goldColor = theme.hayahGold;
 
     return Container(
       decoration: BoxDecoration(
@@ -27,7 +26,7 @@ class AppBottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 8.h),
+          padding: EdgeInsets.symmetric(vertical: AppTheme.space2),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -93,7 +92,7 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12.r),
+      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
       child: SizedBox(
         width: 68.w,
         child: Padding(
@@ -104,7 +103,9 @@ class _NavItem extends StatelessWidget {
               Icon(
                 icon,
                 size: 22.r,
-                color: active ? goldColor : Colors.grey.withValues(alpha: 0.62),
+                color: active
+                    ? goldColor
+                    : AppTheme.mutedIcon.withValues(alpha: 0.62),
               ),
               SizedBox(height: 4.h),
               Text(
@@ -116,16 +117,16 @@ class _NavItem extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   color: active
                       ? goldColor
-                      : Colors.grey.withValues(alpha: 0.62),
+                      : AppTheme.mutedIcon.withValues(alpha: 0.62),
                 ),
               ),
               SizedBox(height: 4.h),
               AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+                duration: AppTheme.navIndicatorDuration,
                 width: active ? 16.w : 4.w,
                 height: 3.h,
                 decoration: BoxDecoration(
-                  color: active ? goldColor : Colors.transparent,
+                  color: active ? goldColor : AppTheme.transparent,
                   borderRadius: BorderRadius.circular(2.r),
                 ),
               ),

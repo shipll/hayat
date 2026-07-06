@@ -5,6 +5,15 @@ class AppTranslations extends Translations {
   Map<String, Map<String, String>> get keys => {
     'en': {
       'title': 'Hayah',
+      'user_name_title': 'Welcome to Hayah',
+      'user_name_subtitle':
+          'Write your name so the app can greet you personally.',
+      'your_name': 'Your name',
+      'continue': 'Continue',
+      'name': 'Name',
+      'edit': 'Edit',
+      'save': 'Save',
+      'edit_name': 'Edit name',
       'location_name': 'Current location',
       'ramadan_date': 'Today',
       'est_1445': 'Est. 1445 AH',
@@ -47,8 +56,25 @@ class AppTranslations extends Translations {
       'qibla_live': 'Live compass direction',
       'qibla_no_sensor':
           'This device does not expose a compass sensor. Showing the saved numeric Qibla angle.',
+      'qibla_startup_no_sensor':
+          'This device does not support a live compass. Qibla compass guidance is disabled; the app will show the numeric Qibla angle instead.',
       'qibla_stream_error':
           'Unable to read compass data. Check location and sensor permissions.',
+      'qibla_location_disabled':
+          'Turn on location services to start the live Qibla compass.',
+      'qibla_permission_denied':
+          'Allow location permission to start the live Qibla compass.',
+      'qibla_camera_permission_denied':
+          'Allow camera permission to show live Qibla guidance.',
+      'qibla_camera_unavailable':
+          'The camera could not be started. Showing the numeric Qibla angle.',
+      'qibla_camera_preview': 'Camera preview',
+      'qibla_no_live_direction': 'No live direction',
+      'qibla_turn_left': 'Left',
+      'qibla_turn_right': 'Right',
+      'qibla_forward': 'Face',
+      'qibla_manual_arrows_hint':
+          'Use the Qibla angle as your reference; this phone cannot auto-detect left or right.',
       'qibla_align_hint':
           'Hold the phone flat and turn until the arrow points forward.',
       'qibla_on_demand_hint':
@@ -75,6 +101,9 @@ class AppTranslations extends Translations {
       'settings': 'Settings',
       'language': 'Language',
       'appearance': 'Appearance',
+      'page_navigation': 'Page navigation',
+      'page_navigation_slide': 'Slide',
+      'page_navigation_fold': 'Fold',
       'welcome_back': 'As-salamu Alaykum',
       'user_name': 'Omar',
       'continue_reading': 'Continue Reading',
@@ -152,6 +181,15 @@ class AppTranslations extends Translations {
     },
     'ar': {
       'title': 'حياة',
+      'user_name_title': 'مرحبا بك في حياة',
+      'user_name_subtitle':
+          'اكتب اسمك ليظهر داخل التطبيق بدل الاسم الافتراضي.',
+      'your_name': 'اسمك',
+      'continue': 'متابعة',
+      'name': 'الاسم',
+      'edit': 'تعديل',
+      'save': 'حفظ',
+      'edit_name': 'تعديل الاسم',
       'location_name': 'الموقع الحالي',
       'ramadan_date': 'اليوم',
       'est_1445': 'تأسس عام 1445 هـ',
@@ -192,8 +230,25 @@ class AppTranslations extends Translations {
       'qibla_live': 'اتجاه مباشر من البوصلة',
       'qibla_no_sensor':
           'هذا الجهاز لا يوفّر حساس بوصلة. سيتم عرض زاوية القبلة الرقمية المحفوظة.',
+      'qibla_startup_no_sensor':
+          'هذا الجهاز لا يدعم البوصلة الحية. سيتم إيقاف توجيه القبلة المباشر وعرض زاوية القبلة الرقمية فقط.',
       'qibla_stream_error':
           'تعذر قراءة بيانات البوصلة. تحقق من صلاحيات الموقع والحساسات.',
+      'qibla_location_disabled':
+          'شغّل خدمات الموقع لتشغيل بوصلة القبلة المباشرة.',
+      'qibla_permission_denied':
+          'اسمح بصلاحية الموقع لتشغيل بوصلة القبلة المباشرة.',
+      'qibla_camera_permission_denied':
+          'اسمح بصلاحية الكاميرا لعرض توجيه القبلة المباشر.',
+      'qibla_camera_unavailable':
+          'تعذر تشغيل الكاميرا. سيتم عرض زاوية القبلة الرقمية.',
+      'qibla_camera_preview': 'معاينة الكاميرا',
+      'qibla_no_live_direction': 'لا يوجد اتجاه مباشر',
+      'qibla_turn_left': 'يسار',
+      'qibla_turn_right': 'يمين',
+      'qibla_forward': 'الأمام',
+      'qibla_manual_arrows_hint':
+          'استخدم زاوية القبلة كمرجع؛ هذا الهاتف لا يستطيع معرفة اليمين أو اليسار تلقائيا.',
       'qibla_align_hint':
           'ضع الهاتف بشكل مستو وأدره حتى يشير السهم إلى الأمام.',
       'qibla_on_demand_hint':
@@ -219,6 +274,9 @@ class AppTranslations extends Translations {
       'settings': 'الإعدادات',
       'language': 'اللغة',
       'appearance': 'المظهر',
+      'page_navigation': 'التنقل بين الصفحات',
+      'page_navigation_slide': 'إزاحة',
+      'page_navigation_fold': 'طي',
       'welcome_back': 'السلام عليكم',
       'user_name': 'عمر',
       'continue_reading': 'متابعة القراءة',

@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/arabesque_painter.dart';
 
@@ -252,9 +253,7 @@ class _SunnahPageState extends State<SunnahPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final goldColor = theme.brightness == Brightness.dark
-        ? const Color(0xFFD4AF37)
-        : const Color(0xFFC5A059);
+    final goldColor = theme.hayahGold;
     final results = _filteredBooks();
     final hadithResults = _globalHadithResults();
     final hasSearch = _query.trim().isNotEmpty;
@@ -1102,9 +1101,7 @@ class _SunnahReaderPageState extends State<_SunnahReaderPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final goldColor = theme.brightness == Brightness.dark
-        ? const Color(0xFFD4AF37)
-        : const Color(0xFFC5A059);
+    final goldColor = theme.hayahGold;
     final results = _filteredHadiths();
 
     return Directionality(

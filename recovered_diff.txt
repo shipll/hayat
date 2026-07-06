@@ -1,0 +1,314 @@
+﻿Created At: 2026-07-05T08:28:38Z
+Completed At: 2026-07-05T08:28:47Z
+
+				The command completed successfully.
+				Output:
+				<truncated 770 lines>
+                           ScaffoldMessenger.of(sheetContext).showSnackBar(
+                             SnackBar(
+                               content: Text(
+-                                'ط¬ط§ط±ظٹ طھط­ظ…ظٹظ„ ${_decodeLegacyArabic(tafsir.name)}',
++                                'ط¬ط§ط±ظٹ طھط­ظ…ظٹظ„ ${_cleanDisplayText(tafsir.name)}',
+                               ),
+                             ),
+                           );
+-                          await quran.tafsirDownload(index);
++                          try {
++                            await quran.tafsirDownload(index);
++                          } catch (error, stackTrace) {
++                            log(
++                              'Tafsir download failed: $error',
++                              name: 'HayahQuran',
++                              stackTrace: stackTrace,
++                            );
++                            if (sheetContext.mounted) {
++                              ScaffoldMessenger.of(
++                                sheetContext,
++                              ).hideCurrentSnackBar();
++                              ScaffoldMessenger.of(sheetContext).showSnackBar(
++                                const SnackBar(
++                                  content: Text(
++                                    'طھط¹ط°ط± طھط­ظ…ظٹظ„ ط§ظ„طھظپط³ظٹط±. طھط­ظ‚ظ‚ ظ…ظ† ط§طھطµط§ظ„ ط§ظ„ط¥ظ†طھط±ظ†طھ ظˆط­ط§ظˆظ„ ظ…ط±ط© ط£ط®ط±ظ‰.',
++                                  ),
++                                ),
++                              );
++                            }
++                            return;
++                          }
+                         }
++                        if (!sheetContext.mounted) return;
+                         quran.changeTafsirSwitch(index, pageNumber: ayah.page);
+                         if (sheetContext.mounted) Navigator.pop(sheetContext);
+                         if (context.mounted) _showAyahTafsir(context, ayah);
+@@ -1272,6 +1775,8 @@ void _showTafsirDownloads(BuildContext context, AyahModel ayah) {
+           ),
+         ),
+       ),
++    );
++      },
+     ),
+   );
+ }
+@@ -1284,11 +1789,13 @@ void _showArabicMeaning(BuildContext context, AyahModel ayah) {
+     builder: (sheetContext) => SafeArea(
+       child: Directionality(
+         textDirection: TextDirection.rtl,
+-        child: Padding(
+-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+-          child: Column(
+-            mainAxisSize: MainAxisSize.min,
+-            crossAxisAlignment: CrossAxisAlignment.stretch,
++        child: ConstrainedBox(
++          constraints: BoxConstraints(
++            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.82,
++          ),
++          child: ListView(
++            shrinkWrap: true,
++            padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+             children: [
+               Text(
+                 'ط§ظ„ظ…ط¹ظ†ظ‰ ط§ظ„ظ…ط¨ط³ط· ظ„ظ„ط¢ظٹط©',
+@@ -1333,7 +1840,7 @@ void _showArabicMeaning(BuildContext context, AyahModel ayah) {
+                   }
+ 
+                   return Text(
+-                    meaning,
++                    _cleanDisplayText(meaning),
+                     textAlign: TextAlign.right,
+                     style: TextStyle(
+                       color: Colors.white.withValues(alpha: 0.76),
+@@ -1370,6 +1877,19 @@ Future<String> _loadSimpleArabicMeaning(AyahModel ayah) async {
+ }
+ 
+ String _decodeLegacyArabic(String value) {
++  var decoded = value;
++  for (var i = 0; i < 3; i++) {
++    final next = _decodeLegacyArabicOnce(decoded);
++    if (next == decoded) break;
++    decoded = next;
++  }
++  return decoded;
++}
++
++String _decodeLegacyArabicOnce(String value) {
++  final windows1256Decoded = _decodeWindows1256Mojibake(value);
++  if (windows1256Decoded != value) return windows1256Decoded;
++
+   try {
+     return utf8.decode(latin1.encode(value));
+   } catch (_) {
+@@ -1377,7 +1897,212 @@ String _decodeLegacyArabic(String value) {
+   }
+ }
+ 
++String _decodeWindows1256Mojibake(String value) {
++  if (!RegExp(r'[ط·ط¸ط¢ط£]').hasMatch(value)) return value;
++
++  final bytes = <int>[];
++  for (final codeUnit in value.codeUnits) {
++    final byte = _windows1256Utf8MojibakeByte(codeUnit);
++    if (byte == null) return value;
++    bytes.add(byte);
++  }
++
++  try {
++    return utf8.decode(bytes);
++  } catch (_) {
++    return value;
++  }
++}
++
++int? _windows1256Utf8MojibakeByte(int codeUnit) {
++  switch (codeUnit) {
++    case 0x20AC:
++      return 0x80;
++    case 0x067E:
++      return 0x81;
++    case 0x201A:
++      return 0x82;
++    case 0x0192:
++      return 0x83;
++    case 0x201E:
++      return 0x84;
++    case 0x2026:
++      return 0x85;
++    case 0x2020:
++      return 0x86;
++    case 0x2021:
++      return 0x87;
++    case 0x02C6:
++      return 0x88;
++    case 0x2030:
++      return 0x89;
++    case 0x0679:
++      return 0x8A;
++    case 0x2039:
++      return 0x8B;
++    case 0x0152:
++      return 0x8C;
++    case 0x0686:
++      return 0x8D;
++    case 0x0698:
++      return 0x8E;
++    case 0x0688:
++      return 0x8F;
++    case 0x06AF:
++      return 0x90;
++    case 0x2018:
++      return 0x91;
++    case 0x2019:
++      return 0x92;
++    case 0x201C:
++      return 0x93;
++    case 0x201D:
++      return 0x94;
++    case 0x2022:
++      return 0x95;
++    case 0x2013:
++      return 0x96;
++    case 0x2014:
++      return 0x97;
++    case 0x06A9:
++      return 0x98;
++    case 0x2122:
++      return 0x99;
++    case 0x0691:
++      return 0x9A;
++    case 0x203A:
++      return 0x9B;
++    case 0x0153:
++      return 0x9C;
++    case 0x200C:
++      return 0x9D;
++    case 0x200D:
++      return 0x9E;
++    case 0x06BA:
++      return 0x9F;
++    case 0x060C:
++      return 0xA1;
++    case 0x06BE:
++      return 0xAA;
++    case 0x061B:
++      return 0xBA;
++    case 0x061F:
++      return 0xBF;
++    case 0x06C1:
++      return 0xC0;
++    case 0x0621:
++      return 0xC1;
++    case 0x0622:
++      return 0xC2;
++    case 0x0623:
++      return 0xC3;
++    case 0x0624:
++      return 0xC4;
++    case 0x0625:
++      return 0xC5;
++    case 0x0626:
++      return 0xC6;
++    case 0x0627:
++      return 0xC7;
++    case 0x0628:
++      return 0xC8;
++    case 0x0629:
++      return 0xC9;
++    case 0x062A:
++      return 0xCA;
++    case 0x062B:
++      return 0xCB;
++    case 0x062C:
++      return 0xCC;
++    case 0x062D:
++      return 0xCD;
++    case 0x062E:
++      return 0xCE;
++    case 0x062F:
++      return 0xCF;
++    case 0x0630:
++      return 0xD0;
++    case 0x0631:
++      return 0xD1;
++    case 0x0632:
++      return 0xD2;
++    case 0x0633:
++      return 0xD3;
++    case 0x0634:
++      return 0xD4;
++    case 0x0635:
++      return 0xD5;
++    case 0x0636:
++      return 0xD6;
++    case 0x0637:
++      return 0xD8;
++    case 0x0638:
++      return 0xD9;
++    case 0x0639:
++      return 0xDA;
++    case 0x063A:
++      return 0xDB;
++    case 0x0640:
++      return 0xDC;
++    case 0x0641:
++      return 0xDD;
++    case 0x0642:
++      return 0xDE;
++    case 0x0643:
++      return 0xDF;
++    case 0x0644:
++      return 0xE1;
++    case 0x0645:
++      return 0xE3;
++    case 0x0646:
++      return 0xE4;
++    case 0x0647:
++      return 0xE5;
++    case 0x0648:
++      return 0xE6;
++    case 0x0649:
++      return 0xEC;
++    case 0x064A:
++      return 0xED;
++    case 0x064B:
++      return 0xF0;
++    case 0x064C:
++      return 0xF1;
++    case 0x064D:
++      return 0xF2;
++    case 0x064E:
++      return 0xF3;
++    case 0x064F:
++      return 0xF5;
++    case 0x0650:
++      return 0xF6;
++    case 0x0651:
++      return 0xF8;
++    case 0x0652:
++      return 0xFA;
++    case 0x200E:
++      return 0xFD;
++    case 0x200F:
++      return 0xFE;
++    case 0x06D2:
++      return 0xFF;
++  }
++
++  if (codeUnit <= 0x00FF) return codeUnit;
++  return null;
++}
++
++String _cleanDisplayText(String value) {
++  return _cleanHtmlText(
++    _decodeLegacyArabic(value),
++  ).replaceAll('\uFFFD', '').replaceAll(RegExp(r'\s+'), ' ').trim();
++}
++
+ String _cleanTafsirText(String value) {
++  return _cleanDisplayText(value);
++}
++
++String _cleanHtmlText(String value) {
+   return value
+       .replaceAll(RegExp(r'<[^>]+>'), '')
+       .replaceAll('&quot;', '"')
+
+

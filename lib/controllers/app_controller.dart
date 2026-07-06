@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../controllers/prayer_controller.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
 
 class AppController extends GetxController {
   AppController(this._storage);
@@ -16,34 +20,43 @@ class AppController extends GetxController {
   NotificationService get _notificationService =>
       Get.find<NotificationService>();
 
-  static const List<DailyDhikr> dailyDhikrItems = [
+  static const _dhikrAssetPath = 'assets/data/daily_dhikr.json';
+  static const _selectedDailyDhikrDateKey = 'selected_daily_dhikr_date';
+  static const _selectedDailyDhikrIdKey = 'selected_daily_dhikr_id';
+  static const _selectedDailyDhikrPoolSizeKey =
+      'selected_daily_dhikr_pool_size';
+
+  static const List<DailyDhikr> _fallbackDailyDhikrItems = [
     DailyDhikr(
       id: 0,
       text: 'سبحان الله وبحمده',
-      reference: 'من قالها مائة مرة حطت خطاياه وإن كانت مثل زبد البحر',
+      reference: 'ذكر عظيم يملأ القلب تسبيحا وشكرا لله.',
     ),
     DailyDhikr(
       id: 1,
       text:
           'لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير',
-      reference: 'ذكر عظيم يجدد معنى التوحيد في القلب',
+      reference: 'ذكر يجدد معنى التوحيد والتوكل.',
     ),
     DailyDhikr(
       id: 2,
       text: 'أستغفر الله العظيم وأتوب إليه',
-      reference: 'باب واسع للطمأنينة والرجوع إلى الله',
+      reference: 'استغفار يفتح باب الرجوع إلى الله.',
     ),
     DailyDhikr(
       id: 3,
       text: 'اللهم صل وسلم على نبينا محمد',
-      reference: 'صلاة وسلام على رسول الله صلى الله عليه وسلم',
+      reference: 'صلاة وسلام على رسول الله صلى الله عليه وسلم.',
     ),
     DailyDhikr(
       id: 4,
       text: 'لا حول ولا قوة إلا بالله',
-      reference: 'كنز من كنوز الجنة',
+      reference: 'ذكر يرسخ الافتقار إلى عون الله.',
     ),
   ];
+
+  final RxList<DailyDhikr> dailyDhikrItems =
+      List<DailyDhikr>.of(_fallbackDailyDhikrItems).obs;
 
   // Navigation / Route state
   // 0: Home, 1: Salat, 2: Quran, 3: Sunnah, 5: Profile
@@ -57,6 +70,9 @@ class AppController extends GetxController {
 
   // User profile state
   late final RxString userName;
+
+  // Page transition preference
+  late final Rx<PageNavigationMode> pageNavigationMode;
 
   // Dhikr reminders
   late final RxBool dhikrReminderEnabled;
@@ -77,6 +93,7 @@ class AppController extends GetxController {
     currentLanguage = _storage.read<String>('language', 'en').obs;
     isNightMode = _storage.read<bool>('night_mode', true).obs;
     userName = _storage.read<String>('user_name', '').obs;
+    pageNavigationMode = _readPageNavigationMode().obs;
     dhikrReminderEnabled = _storage
         .read<bool>('dhikr_reminder_enabled', false)
         .obs;
@@ -87,7 +104,10 @@ class AppController extends GetxController {
         .read<String>('dhikr_completion_date', '')
         .obs;
     _resetDhikrProgressIfNeeded();
-    selectedDhikrId = _dailyDhikrIdForToday().obs;
+    selectedDhikrId = _storage
+        .read<int>(_selectedDailyDhikrIdKey, _fallbackDailyDhikrItems.first.id)
+        .obs;
+    unawaited(_loadDhikrItems());
     if (Get.isRegistered<NotificationService>()) {
       _notificationPayloadSub = _notificationService.payloads.listen(
         handleNotificationPayload,
@@ -253,6 +273,11 @@ class AppController extends GetxController {
     activePageIndex.value = index;
   }
 
+  Future<void> setPageNavigationMode(PageNavigationMode mode) async {
+    pageNavigationMode.value = mode;
+    await _storage.write('page_navigation_mode', mode.name);
+  }
+
   void incrementTasbih() {
     if (tasbihCount.value < 33) {
       tasbihCount.value++;
@@ -286,11 +311,83 @@ class AppController extends GetxController {
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
-  int _dailyDhikrIdForToday() {
-    final now = DateTime.now();
-    final firstDayOfYear = DateTime(now.year);
-    final dayIndex = now.difference(firstDayOfYear).inDays;
-    return dailyDhikrItems[dayIndex % dailyDhikrItems.length].id;
+  Future<void> _loadDhikrItems() async {
+    try {
+      final rawJson = await rootBundle.loadString(_dhikrAssetPath);
+      final decoded = jsonDecode(rawJson);
+      if (decoded is! List) return;
+
+      final loadedItems = decoded
+          .whereType<Map>()
+          .map((json) => DailyDhikr.fromJson(Map<String, dynamic>.from(json)))
+          .where((dhikr) => dhikr.text.trim().isNotEmpty)
+          .toList(growable: false);
+
+      if (loadedItems.isEmpty) return;
+
+      dailyDhikrItems.assignAll(loadedItems);
+      _selectDailyDhikrIfNeeded(forceWhenMissing: true);
+      if (dhikrReminderEnabled.value) {
+        unawaited(rescheduleDhikrReminders());
+      }
+    } catch (_) {
+      dailyDhikrItems.assignAll(_fallbackDailyDhikrItems);
+      _selectDailyDhikrIfNeeded(forceWhenMissing: true);
+    }
+  }
+
+  PageNavigationMode _readPageNavigationMode() {
+    final raw = _storage.read<String>(
+      'page_navigation_mode',
+      PageNavigationMode.slide.name,
+    );
+    return PageNavigationMode.values.firstWhere(
+      (mode) => mode.name == raw,
+      orElse: () => PageNavigationMode.slide,
+    );
+  }
+
+  void _selectDailyDhikrIfNeeded({bool forceWhenMissing = false}) {
+    final today = _todayKey();
+    final savedDate = _storage.read<String>(_selectedDailyDhikrDateKey, '');
+    final savedId = _storage.read<int>(
+      _selectedDailyDhikrIdKey,
+      _fallbackDailyDhikrItems.first.id,
+    );
+    final savedPoolSize = _storage.read<int>(
+      _selectedDailyDhikrPoolSizeKey,
+      0,
+    );
+    final currentPoolSize = dailyDhikrItems.length;
+    final hasSavedDhikr = dailyDhikrItems.any((dhikr) => dhikr.id == savedId);
+    final isSamePool = savedPoolSize == currentPoolSize;
+
+    if (savedDate == today && hasSavedDhikr && isSamePool) {
+      selectedDhikrId.value = savedId;
+      return;
+    }
+    if (savedDate == today && !forceWhenMissing) return;
+
+    final nextDhikr = _randomDailyDhikr();
+    selectedDhikrId.value = nextDhikr.id;
+    unawaited(_storage.write(_selectedDailyDhikrDateKey, today));
+    unawaited(_storage.write(_selectedDailyDhikrIdKey, nextDhikr.id));
+    unawaited(_storage.write(_selectedDailyDhikrPoolSizeKey, currentPoolSize));
+  }
+
+  DailyDhikr _randomDailyDhikr() {
+    final items = dailyDhikrItems.isEmpty
+        ? _fallbackDailyDhikrItems
+        : dailyDhikrItems;
+    final previousId = _storage.read<int>(_selectedDailyDhikrIdKey, -1);
+    if (items.length == 1) return items.first;
+
+    final random = Random();
+    DailyDhikr candidate;
+    do {
+      candidate = items[random.nextInt(items.length)];
+    } while (candidate.id == previousId);
+    return candidate;
   }
 
   void _startDayTicker() {
@@ -301,7 +398,7 @@ class AppController extends GetxController {
       final today = _todayKey();
       if (currentDayKey.value == today) return;
       currentDayKey.value = today;
-      selectedDhikrId.value = _dailyDhikrIdForToday();
+      _selectDailyDhikrIfNeeded();
       _resetDhikrProgressIfNeeded();
       unawaited(rescheduleDhikrReminders());
     });
@@ -312,12 +409,22 @@ class AppController extends GetxController {
       .contains('TestWidgetsFlutterBinding');
 }
 
+enum PageNavigationMode { slide, fold }
+
 class DailyDhikr {
   const DailyDhikr({
     required this.id,
     required this.text,
     required this.reference,
   });
+
+  factory DailyDhikr.fromJson(Map<String, dynamic> json) {
+    return DailyDhikr(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      text: json['text']?.toString() ?? '',
+      reference: json['reference']?.toString() ?? '',
+    );
+  }
 
   final int id;
   final String text;
@@ -332,19 +439,22 @@ class _DhikrDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final goldColor = theme.brightness == Brightness.dark
-        ? const Color(0xFFD4AF37)
-        : const Color(0xFFC5A059);
+    final goldColor = theme.hayahGold;
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: SafeArea(
         child: Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+          margin: EdgeInsets.all(AppTheme.space4),
+          padding: EdgeInsets.fromLTRB(
+            AppTheme.space5,
+            AppTheme.space5,
+            AppTheme.space5,
+            AppTheme.space5,
+          ),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             border: Border.all(color: goldColor.withValues(alpha: 0.25)),
           ),
           child: Column(
@@ -354,10 +464,10 @@ class _DhikrDetailSheet extends StatelessWidget {
               Row(
                 children: [
                   Icon(Icons.self_improvement, color: goldColor),
-                  const SizedBox(width: 8),
+                  SizedBox(width: AppTheme.space2),
                   Expanded(
                     child: Text(
-                      'ذكر اليوم',
+                      'daily_dhikr'.tr,
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: goldColor,
                         fontWeight: FontWeight.bold,
@@ -370,7 +480,7 @@ class _DhikrDetailSheet extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: AppTheme.space4),
               Text(
                 dhikr.text,
                 textAlign: TextAlign.center,
@@ -379,13 +489,13 @@ class _DhikrDetailSheet extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: AppTheme.space4),
               Text(
                 dhikr.reference,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(height: 1.6),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: AppTheme.space5),
               FilledButton.icon(
                 onPressed: () async {
                   await Get.find<AppController>().completeCurrentDhikr();
